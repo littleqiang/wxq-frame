@@ -8,46 +8,42 @@
   <artifactId>wxq-frame</artifactId>
   <name>wxq-frame</name>
   <description>框架</description>
-  <modules>
-    <module>wxq-base</module>
-    <module>wxq-moduleA</module>
-  </modules>
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.3.12.RELEASE</version>
+    <version>3.1.1</version>
     <relativePath/>
   </parent>
 
   <properties>
-    <java.version>1.8</java.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <mysqlConnector.version>5.1.44</mysqlConnector.version>
-    <druidSpring.version>1.1.7</druidSpring.version>
-    <mybatisSpring.version>1.3.1</mybatisSpring.version>
-    <mybatisPageHelper.version>1.2.3</mybatisPageHelper.version>
+    <java.version>17</java.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-dependencies</artifactId>
-        <version>Greenwich.RELEASE</version>
-        <type>pom</type>
-        <scope>import</scope>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+        <version>3.1.1</version>
       </dependency>
 
+      <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
       <dependency>
-        <groupId>com.alibaba.cloud</groupId>
-        <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-        <version>2.1.0.RELEASE</version>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>1.18.28</version>
+        <scope>provided</scope>
+      </dependency>
+
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <version>3.1.1</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
