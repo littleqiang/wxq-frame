@@ -6,6 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="wxq-codemanage" />
         <module name="wxq-moduleA" />
       </profile>
     </annotationProcessing>
@@ -16,6 +17,7 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="wxq-base" options="-parameters" />
+      <module name="wxq-codemanage" options="-parameters" />
       <module name="wxq-moduleA" options="-parameters" />
     </option>
   </component>

@@ -6,6 +6,8 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/wxq-moduleA/pom.xml" />
+        <option value="$PROJECT_DIR$/codemanage/pom.xml" />
+        <option value="$PROJECT_DIR$/wxq-codemanage/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
