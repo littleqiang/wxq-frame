@@ -15,7 +15,6 @@ import org.eclipse.jgit.api.MergeResult;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.io.File;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,7 +79,9 @@ public class GitServiceImpl implements GitService {
                 String localPath = projectService.getLocalPath(project);
                 MergeResult mergeResult = GitUtils.mergeBranch(localPath, jobMerge.getSourceBranch(), jobMerge.getTargetBranch(), project.getAccount(), project.getPassword());
                 if (Objects.isNull(mergeResult)) {
-
+                    scheduleStatus.getAndDecrement();
+                    jobMerge.setStatus("2");
+                    jobMerge.setResultDesc("Merge失败；分支" + jobMerge.getSourceBranch() + "-->" + jobMerge.getTargetBranch());
                 } else {
                     switch (mergeResult.getMergeStatus()) {
                         case MERGED -> {
