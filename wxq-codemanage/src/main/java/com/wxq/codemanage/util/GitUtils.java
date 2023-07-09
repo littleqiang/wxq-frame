@@ -1,11 +1,7 @@
-package com.wxq.codemanage;
+package com.wxq.codemanage.util;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ListBranchCommand;
-import org.eclipse.jgit.api.MergeCommand;
-import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -14,7 +10,9 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @Author: wangxuqiang
@@ -22,9 +20,9 @@ import java.util.List;
  * @Description:
  */
 @Slf4j
-public class VersionManagerServiceImpl {
-    static String localPath = "C:\\Users\\wxq\\static\\gitprojectTemp";
-    static String remoteURL = "http://git.manjitech.com/littleqiang/gittest.git";
+public class GitUtils {
+    static String loca = "/Users/wangxuqiang/Documents/gittemp";
+    static String remo = "git@github.com:littleqiang/testgit.git";
 
     /**
      * desciption 检出仓库代码
@@ -38,11 +36,11 @@ public class VersionManagerServiceImpl {
     public static Boolean cloneRepository(String url, String localPath,String gitName,String gitPassword) {
         Git git =null;
         try {
-            log.info("开始检出Master代码;git路径:{},检出路径：{}",url,localPath);
+            log.info("【开始检出Master代码 git路径:{},检出路径：{}】",url,localPath);
 
             File file=new File(localPath);
             if(file.isDirectory()){
-                log.info("该路径:{}，已存在文件夹，删除原文件，进行覆盖",localPath);
+                log.info("【该路径:{}，已存在文件夹，删除原文件，进行覆盖】",localPath);
                 deleteFile(file);
             }
 
@@ -55,7 +53,7 @@ public class VersionManagerServiceImpl {
                     .call();
             return true;
         } catch (Exception e) {
-            log.error("错误;检出Master代码异常;检出路径:{},异常信息:{}",url,e);
+            log.error("【错误;检出Master代码异常;检出路径:{},异常信息:{}】", url, e.toString());
             return false;
         } finally{
             if (git != null) {
@@ -74,7 +72,7 @@ public class VersionManagerServiceImpl {
      */
     public static  Boolean checkoutBranch(String localPath, String branchName,String gitName,String gitPassword){
         log.info("JgitUtil.checkoutBranch;切换分支;{}",branchName);
-        String projectURL = localPath + "\\.git";
+        String projectURL = localPath + File.separator + ".git";
         CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(gitName, gitPassword);
         Git git = null;
         try {
@@ -103,7 +101,7 @@ public class VersionManagerServiceImpl {
      */
     public static Boolean gitCommitAndPush(String localPath,String pushMessage,String gitName,String gitPassword)  {
         log.info("JgitUtil.gitCommitAndPush;提交代码;信息：{}",pushMessage);
-        String projectURL = localPath + "\\.git";
+        String projectURL = localPath + File.separator + ".git";
         Git git = null;
         try {
             CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(gitName, gitPassword);
@@ -137,7 +135,7 @@ public class VersionManagerServiceImpl {
         log.info("JgitUtil.newBranch;创建新的分支;名称{}",branchName);
         Git git = null;
         try {
-            String projectURL = localPath + "\\.git";
+            String projectURL = localPath + File.separator + ".git";
             CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(gitName, gitPassword);
             git = Git.open(new File(projectURL));
             //检查新建的分支是否已经存在，如果存在则将已存在的分支强制删除并新建一个分支
@@ -177,25 +175,56 @@ public class VersionManagerServiceImpl {
      * desciption 合并分支
      *
      */
-    public static Boolean mergeBranch(String localPath, String sourceBranch, String targetBranch, String gitName, String gitPassword) {
+    public static MergeResult mergeBranch(String localPath, String sourceBranch, String targetBranch, String gitName, String gitPassword) {
         log.info("合并分支;{}", sourceBranch);
-        String projectURL = localPath + "\\.git";
-        CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(gitName, gitPassword);
+        String projectURL = localPath + File.separator + ".git";
         Git git = null;
         try {
+            CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(gitName, gitPassword);
             git = Git.open(new File(projectURL));
-            Ref sourceRef = git.checkout().setCreateBranch(false).setName(sourceBranch).call();
-            git.checkout().setCreateBranch(false).setName(targetBranch).call();
+            List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+            Ref sourceRef = refs.stream().filter(o -> ("refs/remotes/origin/" + sourceBranch).equals(o.getName())).findFirst().orElseThrow();
+            List<Ref> localBranchList = git.branchList().call();
+            Optional<Ref> localRefOp = localBranchList.stream().filter(o -> ("refs/heads/" + targetBranch).equals(o.getName())).findFirst();
+            Ref localRef;
+            if (localRefOp.isPresent()) {
+                // 存在则切换本地分支
+                System.out.println("切换本地分支");
+                localRef = git.checkout().setName(targetBranch).call();
+            } else {
+                // 不存在则切换为远程分支
+                System.out.println("checkout远程分支");
+                localRef = git.checkout().setCreateBranch(true).setName(targetBranch)
+                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .setStartPoint("origin/" + targetBranch).call();
+            }
+            //拉取更新
+            git.pull().setCredentialsProvider(credentialsProvider).setRemoteBranchName(targetBranch).call();
             MergeResult mergeResult = git.merge().include(sourceRef)
-                    .setCommit(true)
                     .setFastForward(MergeCommand.FastForwardMode.NO_FF)
-                    .setMessage("Merge sourceBranchName into targetBranchName.")
                     .call();
-            log.info(mergeResult.toString());
-            return true;
+            switch (mergeResult.getMergeStatus()) {
+                case MERGED -> {
+                    git.commit().setMessage("ps").call();
+                    git.pull().setCredentialsProvider(credentialsProvider).call();
+                    git.push().setCredentialsProvider(credentialsProvider).call();
+                }
+                case CONFLICTING -> {
+                    log.warn("有冲突:"+mergeResult.getMergeStatus().name());
+                    git.reset().call();
+                    git.checkout().setAllPaths(true).call();
+                }
+                case ALREADY_UP_TO_DATE -> log.info("无变更内容");
+                case FAILED -> {
+                    log.warn("失败:"+mergeResult.getMergeStatus().name());
+                    git.reset().call();
+                    git.checkout().setAllPaths(true).call();
+                }
+            }
+            return mergeResult;
         } catch (Exception e) {
             log.error("错误;合并分支:{}", e);
-            return false;
+            return null;
         } finally {
             if (git != null) {
                 git.close();
@@ -226,23 +255,33 @@ public class VersionManagerServiceImpl {
     }
 
     public static void main(String[] args) throws GitAPIException, IOException {
-        String remoteURL = "http://git.manjitech.com/littleqiang/gittest.git";
-        String branchName = "master";
-        String localPath = "C:\\Users\\wxq\\static\\gitprojectTemp" + File.separator + branchName;
+        String remoteURL = "https://gitcode.net/u013409833/testgit.git";
+        String branchName = "main";
+        String localPath = "/Users/wangxuqiang/Documents/gittemp" + File.separator + branchName;
 
-        String gitName="littleqiang";
-        String gitPassword="wxq1988WXQ";
+        String gitName="13524359120";
+        String gitPassword="qasnuT-jaqded-hetpy7";
+
+        List<String> targetBranchs = Arrays.asList("test2", "test3");
 
         //拉取master代码
-        VersionManagerServiceImpl.cloneRepository(remoteURL,localPath,gitName, gitPassword);
+//        VersionManagerServiceImpl.cloneRepository(remoteURL,localPath,gitName, gitPassword);
+        GitUtils.checkoutBranch(localPath,"master",gitName, gitPassword);
         //创建分支
-        branchName = "test1";
-        VersionManagerServiceImpl.newBranch(localPath,branchName,gitName, gitPassword);
+        branchName = "dev";
+        GitUtils.newBranch(localPath,branchName,gitName, gitPassword);
         //切换分支
-        VersionManagerServiceImpl.checkoutBranch(localPath,branchName,gitName, gitPassword);
+//        VersionManagerServiceImpl.checkoutBranch(localPath,branchName,gitName, gitPassword);
         //代码提交
-        VersionManagerServiceImpl.gitCommitAndPush(localPath,"测试提交1",gitName, gitPassword);
-//        CodeManage.mergeBranch(localPath, "", "", gitName, gitPassword);
+//        VersionManagerServiceImpl.gitCommitAndPush(localPath,"测试提交1",gitName, gitPassword);
+//        for (String target : targetBranchs) {
+//            VersionManagerServiceImpl.mergeBranch(localPath, "test1", target, gitName, gitPassword);
+//            VersionManagerServiceImpl.gitCommitAndPush(localPath, "测试合并" + target, gitName, gitPassword);
+//        }
+
+//        VersionManagerServiceImpl.mergeBranch(localPath, "test1", "test2", gitName, gitPassword);
+
+//        VersionManagerServiceImpl.gitCommitAndPush(localPath,"测试合并",gitName, gitPassword);
 
         // 判断本地目录是否存在
 //        File file = new File(localPath);
